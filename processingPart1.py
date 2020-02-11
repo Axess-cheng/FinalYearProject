@@ -3,7 +3,7 @@ import numpy as np;
 from skimage import morphology, color, data;
 
 # TODO: delete the following test code
-path = 'C:/Users/47902/Desktop/task1.png' # 330*140
+path = 'Res/task1.png' # 330*140
 CIRCLES = np.zeros((2,3))
 
 # Structure:
