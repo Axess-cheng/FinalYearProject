@@ -1,6 +1,6 @@
 import cv2;
 import numpy as np;
-from skimage import morphology;
+from skimage import morphology, color, data;
 
 # TODO: delete the following test code
 path = 'C:/Users/47902/Desktop/task1.png' # 330*140
@@ -23,7 +23,9 @@ def readImage(path):
     cv2.imshow('original image(input image)',src)
 
     target = preProcessing(src)
-    cv2.imshow("target", target)
+    findCircle(src)
+    line_detection(target)
+    arrowDetection(target)
     cv2.waitKey(0)
 
 def preProcessing(src):
@@ -44,8 +46,15 @@ def preProcessing(src):
     # convert to gray
     grayTarget = cv2.cvtColor(target, cv2.COLOR_RGB2GRAY)
     cv2.imshow("gray", grayTarget)
-    rest, resTarget = cv2.threshold(grayTarget, 127, 255, cv2.THRESH_BINARY)
-    return resTarget
+    ret, resTarget = cv2.threshold(grayTarget, 127, 255, cv2.THRESH_BINARY_INV)
+    resTarget = (resTarget < 0.5) * 1
+    resTarget = 1- resTarget
+    res = morphology.skeletonize(resTarget)
+    res = res.astype(np.uint8)
+    res = res * 255
+    cv2.imshow("target", res)
+    cv2.imwrite("C:/Users/47902/Desktop/outp.png",res)
+    return res
 
 
 
@@ -65,16 +74,16 @@ def findCircle(src):
         for (x, y, r) in circles:
             # draw the circle in the output image, then draw a rectangle
             # corresponding to the center of the circle
-            cv2.circle(output, (x, y), r, (0, 255, 0), 4)
+            cv2.circle(output, (x, y), r, (0, 255, 0), 1)
             cv2.rectangle(output, (x - 5, y - 5), (x + 5, y + 5), (255, 0, 0), -1)
 
         # show the output image
         cv2.imshow("output", output)
-        cv2.waitKey(0)
+    else:
+        print("not found circle")
 
-def line_detection(image):
-    gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
-    edges = cv2.Canny(gray, 50, 150)
+def line_detection(src):
+    edges = cv2.Canny(src, 50, 150)
     cv2.imshow("edges", edges)
 
     # lines = cv2.HoughLines(edges, 1, np.pi / 180, 80)
@@ -95,11 +104,12 @@ def line_detection(image):
     # checkRelation(k,b)
     # # cv2.line(image, (x0, y0), (x1, y1), (0, 0, 255), 2)
 
-    lines = cv2.HoughLinesP(edges, 1, np.pi / 180, 60, minLineLength=60, maxLineGap=5)
+    lines = cv2.HoughLinesP(edges, 1, np.pi / 180, 60, minLineLength=5, maxLineGap=0)
     for line in lines:
         x1, y1, x2, y2 = line[0]
-        cv2.line(image, (x1, y1), (x2, y2), (0, 0, 255), 2)
-    cv2.imshow("line_detect_possible_demo", image)
+        cv2.line(src, (x1, y1), (x2, y2), (0, 255, 0), 2)
+        print("find one line")
+    cv2.imshow("line_detect_possible_demo", src)
 
 # TODO: three circles in one line
 def checkRelation(k, b):
@@ -115,3 +125,17 @@ def checkRelation(k, b):
         print("they have some relation")
     else:
         print("there is no relation")
+
+
+def arrowDetection(img):
+    gray = np.float32(img)
+
+    corners = cv2.goodFeaturesToTrack(gray, 100, 0.01, 10)
+    corners = np.int0(corners)
+
+    for corner in corners:
+        x, y = corner.ravel()
+        cv2.circle(img, (x, y), 3, 255, -1)
+        print("find a corner")
+
+    cv2.imshow('Corner', img)
